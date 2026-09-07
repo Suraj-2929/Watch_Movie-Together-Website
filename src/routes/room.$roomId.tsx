@@ -94,6 +94,15 @@ function CallStage({ roomId }: { roomId: string }) {
     remoteAudioStream,
   } = session;
 
+  // Ask for the microphone once so people can hear each other straight away.
+  const micAsked = useRef(false);
+  useEffect(() => {
+    if (micAsked.current) return;
+    micAsked.current = true;
+    void session.enableMic();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     const el = audioRef.current;
     if (!el) return;
@@ -176,6 +185,7 @@ function CallStage({ roomId }: { roomId: string }) {
                 label="Other person"
                 active={peerPresent && remoteFlags.cam}
                 micOn={remoteFlags.mic}
+                showMicBadge={peerPresent}
                 placeholder="Camera off"
                 className="aspect-video w-full"
               />
@@ -198,6 +208,7 @@ function CallStage({ roomId }: { roomId: string }) {
               label="Other person"
               active={peerPresent && remoteFlags.cam}
               micOn={remoteFlags.mic}
+              showMicBadge={peerPresent}
               placeholder={peerPresent ? "Their camera is off" : "Nobody here yet"}
               className="aspect-video w-full md:aspect-auto md:min-h-[45vh]"
             />
