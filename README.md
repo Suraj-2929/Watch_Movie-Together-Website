@@ -27,3 +27,10 @@ npm run dev
 - TypeScript
 - React
 - Tailwind CSS
+
+## Watch Together — running and sharing
+
+- Two people per room. One person creates a room, shares the 6-character code, the other joins.
+- Camera, microphone and screen sharing are toggled independently and can be started and stopped as often as you like during a call.
+- Signalling runs on Lovable Cloud realtime; there are no hardcoded local addresses. Connection details come from the `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` environment variables, which differ automatically between local development and the deployed site.
+- To share the app with a friend, press Publish in Lovable and send them the public HTTPS link. Camera, microphone and screen sharing only work over HTTPS (or localhost).
