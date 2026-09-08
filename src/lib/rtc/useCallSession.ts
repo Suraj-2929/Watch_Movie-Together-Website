@@ -527,12 +527,16 @@ export function useCallSession(roomId: string) {
         video: { frameRate: { ideal: 30 } },
         // Ask for tab/system sound too; browsers that can't provide it
         // still return the video, so sharing never fails over audio.
-        audio: true,
+        // Voice processing would gut music/video sound, so switch it off.
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false,
+        },
       });
       const track = stream.getVideoTracks()[0]!;
       const audioTrack = stream.getAudioTracks()[0] ?? null;
       track.onended = () => stopScreenShare();
-      if (audioTrack) audioTrack.onended = () => stopScreenShare();
       screenTrackRef.current = track;
       screenAudioTrackRef.current = audioTrack;
       setLocalScreenStream(new MediaStream([track]));
@@ -540,7 +544,12 @@ export function useCallSession(roomId: string) {
       await senderFor(SLOT.screenAudio)?.replaceTrack(audioTrack);
       setFlags({ screen: true });
       broadcastState();
-      setError(null);
+      setError(
+        audioTrack
+          ? null
+          : "Screen is shared without sound. Pick a browser tab and tick \u201cShare tab audio\u201d in the picker to include sound.",
+      );
+
     } catch {
       // user cancelled the picker — nothing to report
     }
