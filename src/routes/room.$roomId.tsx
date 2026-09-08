@@ -79,7 +79,6 @@ function CallStage({ roomId }: { roomId: string }) {
   const navigate = useNavigate();
   const session = useCallSession(roomId);
   const audioRef = useRef<HTMLAudioElement>(null);
-  const screenAudioRef = useRef<HTMLAudioElement>(null);
 
   const {
     status,
@@ -93,7 +92,6 @@ function CallStage({ roomId }: { roomId: string }) {
     remoteCamStream,
     remoteScreenStream,
     remoteAudioStream,
-    remoteScreenAudioStream,
   } = session;
 
   // Ask for the microphone once so people can hear each other straight away.
@@ -111,19 +109,6 @@ function CallStage({ roomId }: { roomId: string }) {
     if (el.srcObject !== remoteAudioStream) el.srcObject = remoteAudioStream;
     if (remoteAudioStream) void el.play().catch(() => undefined);
   }, [remoteAudioStream]);
-
-  useEffect(() => {
-    const el = screenAudioRef.current;
-    if (!el) return;
-    if (el.srcObject !== remoteScreenAudioStream) {
-      el.srcObject = remoteScreenAudioStream;
-    }
-    if (remoteScreenAudioStream) {
-      el.volume = 1;
-      void el.play().catch(() => undefined);
-    }
-  }, [remoteScreenAudioStream]);
-
 
   const canShareScreen =
     typeof navigator !== "undefined" &&
@@ -253,8 +238,6 @@ function CallStage({ roomId }: { roomId: string }) {
       />
 
       <audio ref={audioRef} autoPlay playsInline className="hidden" />
-      <audio ref={screenAudioRef} autoPlay playsInline className="hidden" />
-
     </main>
   );
 }
