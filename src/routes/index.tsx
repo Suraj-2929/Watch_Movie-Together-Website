@@ -84,6 +84,7 @@ function Lobby() {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col justify-center gap-10 px-4 py-12 sm:px-6">
+      <p className="text-center text-sm font-medium text-primary">For dear Shraddha</p>
       <header className="text-center">
         <span className="inline-flex items-center gap-2 rounded-full border border-border bg-secondary/60 px-3 py-1 text-xs font-medium text-muted-foreground">
           <Users className="h-3.5 w-3.5" /> Private rooms for two
