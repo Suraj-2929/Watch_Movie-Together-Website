@@ -50,6 +50,7 @@ export function useCallSession(roomId: string) {
   const [remoteCamStream, setRemoteCamStream] = useState<MediaStream | null>(null);
   const [remoteScreenStream, setRemoteScreenStream] = useState<MediaStream | null>(null);
   const [remoteAudioStream, setRemoteAudioStream] = useState<MediaStream | null>(null);
+  const [remoteScreenAudioStream, setRemoteScreenAudioStream] = useState<MediaStream | null>(null);
 
   const selfId = useRef<string>("");
   if (!selfId.current) selfId.current = randomId();
@@ -113,6 +114,7 @@ export function useCallSession(roomId: string) {
     setRemoteCamStream(null);
     setRemoteScreenStream(null);
     setRemoteAudioStream(null);
+    setRemoteScreenAudioStream(null);
     setRemoteFlags({ cam: false, mic: false, screen: false });
   }, []);
 
@@ -124,7 +126,6 @@ export function useCallSession(roomId: string) {
 
       const camStream = new MediaStream();
       const screenStream = new MediaStream();
-      const audioStream = new MediaStream();
 
       pc.onicecandidate = (ev) => {
         if (!ev.candidate || !peerIdRef.current) return;
@@ -139,8 +140,8 @@ export function useCallSession(roomId: string) {
       pc.ontrack = (ev) => {
         const index = pc.getTransceivers().indexOf(ev.transceiver);
         if (index === SLOT.audio) {
-          audioStream.addTrack(ev.track);
-          setRemoteAudioStream(audioStream);
+          // Fresh stream object each time so the <audio> element re-attaches.
+          setRemoteAudioStream(new MediaStream([ev.track]));
         } else if (index === SLOT.camera) {
           camStream.addTrack(ev.track);
           setRemoteCamStream(camStream);
@@ -148,8 +149,13 @@ export function useCallSession(roomId: string) {
           screenStream.addTrack(ev.track);
           setRemoteScreenStream(screenStream);
         } else if (index === SLOT.screenAudio) {
-          audioStream.addTrack(ev.track);
-          setRemoteAudioStream(audioStream);
+          const track = ev.track;
+          setRemoteScreenAudioStream(new MediaStream([track]));
+          const refresh = () => setRemoteScreenAudioStream(
+            track.muted ? null : new MediaStream([track]),
+          );
+          track.onunmute = refresh;
+          track.onmute = refresh;
         }
       };
 
@@ -559,6 +565,7 @@ export function useCallSession(roomId: string) {
     remoteCamStream,
     remoteScreenStream,
     remoteAudioStream,
+    remoteScreenAudioStream,
     toggleMic,
     toggleCamera,
     toggleScreenShare,
