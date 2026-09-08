@@ -31,4 +31,5 @@ export const SLOT = {
   audio: 0,
   camera: 1,
   screen: 2,
+  screenAudio: 3,
 } as const;

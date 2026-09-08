@@ -64,6 +64,7 @@ export function useCallSession(roomId: string) {
   const micTrackRef = useRef<MediaStreamTrack | null>(null);
   const camTrackRef = useRef<MediaStreamTrack | null>(null);
   const screenTrackRef = useRef<MediaStreamTrack | null>(null);
+  const screenAudioTrackRef = useRef<MediaStreamTrack | null>(null);
   const flagsRef = useRef<MediaFlags>({ cam: false, mic: false, screen: false });
 
   const setFlags = useCallback((next: Partial<MediaFlags>) => {
@@ -93,6 +94,7 @@ export function useCallSession(roomId: string) {
     void senderFor(SLOT.audio)?.replaceTrack(micTrackRef.current);
     void senderFor(SLOT.camera)?.replaceTrack(camTrackRef.current);
     void senderFor(SLOT.screen)?.replaceTrack(screenTrackRef.current);
+    void senderFor(SLOT.screenAudio)?.replaceTrack(screenAudioTrackRef.current);
   }, []);
 
   const closePeer = useCallback(() => {
@@ -145,6 +147,9 @@ export function useCallSession(roomId: string) {
         } else if (index === SLOT.screen) {
           screenStream.addTrack(ev.track);
           setRemoteScreenStream(screenStream);
+        } else if (index === SLOT.screenAudio) {
+          audioStream.addTrack(ev.track);
+          setRemoteAudioStream(audioStream);
         }
       };
 
@@ -173,6 +178,7 @@ export function useCallSession(roomId: string) {
         pc.addTransceiver("audio", { direction: "sendrecv" });
         pc.addTransceiver("video", { direction: "sendrecv" });
         pc.addTransceiver("video", { direction: "sendrecv" });
+        pc.addTransceiver("audio", { direction: "sendrecv" });
         pushLocalTracks();
       }
 
@@ -387,7 +393,7 @@ export function useCallSession(roomId: string) {
   }, [roomId]);
 
   const stopAllLocalMedia = useCallback(() => {
-    [micTrackRef, camTrackRef, screenTrackRef].forEach((ref) => {
+    [micTrackRef, camTrackRef, screenTrackRef, screenAudioTrackRef].forEach((ref) => {
       ref.current?.stop();
       ref.current = null;
     });
@@ -493,13 +499,17 @@ export function useCallSession(roomId: string) {
 
   const stopScreenShare = useCallback(() => {
     const track = screenTrackRef.current;
+    const audioTrack = screenAudioTrackRef.current;
     screenTrackRef.current = null;
+    screenAudioTrackRef.current = null;
     if (track) {
       track.onended = null;
       track.stop();
     }
+    if (audioTrack) audioTrack.stop();
     setLocalScreenStream(null);
     void senderFor(SLOT.screen)?.replaceTrack(null);
+    void senderFor(SLOT.screenAudio)?.replaceTrack(null);
     setFlags({ screen: false });
     broadcastState();
   }, [broadcastState, setFlags]);
@@ -509,13 +519,19 @@ export function useCallSession(roomId: string) {
     try {
       const stream = await navigator.mediaDevices.getDisplayMedia({
         video: { frameRate: { ideal: 30 } },
-        audio: false,
+        // Ask for tab/system sound too; browsers that can't provide it
+        // still return the video, so sharing never fails over audio.
+        audio: true,
       });
       const track = stream.getVideoTracks()[0]!;
+      const audioTrack = stream.getAudioTracks()[0] ?? null;
       track.onended = () => stopScreenShare();
+      if (audioTrack) audioTrack.onended = () => stopScreenShare();
       screenTrackRef.current = track;
+      screenAudioTrackRef.current = audioTrack;
       setLocalScreenStream(new MediaStream([track]));
       await senderFor(SLOT.screen)?.replaceTrack(track);
+      await senderFor(SLOT.screenAudio)?.replaceTrack(audioTrack);
       setFlags({ screen: true });
       broadcastState();
       setError(null);
